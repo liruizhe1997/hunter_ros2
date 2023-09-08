@@ -104,16 +104,16 @@ class HunterMessenger {
     }
     double dt = (current_time_ - last_time_).seconds();
 
-    auto state = hunter_->GetRobotState();
+    auto state = hunter_->GetRobotState(); //hunter_ is HunterRobot Type(hunter_robot)
 
     // publish hunter state message
     hunter_msgs::msg::HunterStatus status_msg;
 
     status_msg.header.stamp = current_time_;
 
-    status_msg.linear_velocity = state.motion_state.linear_velocity;
+    status_msg.linear_velocity = state.motion_state.linear_velocity * 0.9;
     double phi =ConvertInnerAngleToCentral(state.motion_state.steering_angle);
-    status_msg.steering_angle = phi;
+    status_msg.steering_angle = phi*1.05;
     // status_msg.angular_velocity = state.motion_state.steering_angle;
 
     status_msg.vehicle_state = state.system_state.vehicle_state;
@@ -150,7 +150,7 @@ class HunterMessenger {
     status_pub_->publish(status_msg);
 
     // publish odometry and tf
-    PublishOdometryToROS(state.motion_state, dt);
+    PublishOdometryToROS(status_msg.linear_velocity,status_msg.steering_angle , dt);
 
     // record time for next integration
     last_time_ = current_time_;
@@ -266,11 +266,11 @@ class HunterMessenger {
     return tf2::toMsg(q);
   }
 
-  void PublishOdometryToROS(const MotionStateMessage &msg, double dt) {
+  void PublishOdometryToROS(double linear_speed, double steering_angle, double dt) {
     // perform numerical integration to get an estimation of pose
-    double linear_speed_ = msg.linear_velocity;
+    double linear_speed_ = linear_speed;
     // double angular_speed = msg.angular_velocity;
-    double steering_angle_ = msg.steering_angle;
+    double steering_angle_ = steering_angle;
     // double lateral_speed = 0;
 
     asc::state_t state =
